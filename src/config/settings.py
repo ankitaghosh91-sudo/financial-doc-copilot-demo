@@ -1,0 +1,81 @@
+"""Environment-driven configuration for strategy selection."""
+
+import os
+from dataclasses import dataclass
+from typing import Any
+
+
+def _load_local_env(path: str = ".env") -> None:
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            raw = line.strip()
+            if not raw or raw.startswith("#") or "=" not in raw:
+                continue
+            key, value = raw.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip())
+
+
+def _parse_bool(value: Any, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    cleaned = str(value).strip().lower()
+    if cleaned in ("1", "true", "yes", "on"):
+        return True
+    if cleaned in ("0", "false", "no", "off", ""):
+        return False
+    return default
+
+
+@dataclass
+class AppConfig:
+    search_strategy: str = "hybrid_reranker"
+    reranker_model: str = "BAAI/bge-reranker-base"
+    rag_strategy: str = "auto"
+    prompt_strategy: str = "simple"
+    answer_strategy: str = "llm"
+    use_multi_agent_graph: bool = False
+    agent_max_attempts: int = 2
+    agent_top_k: int = 15
+    memory_strategy: str = "conversation"
+    evaluator_strategy: str = "simple"
+    chunking_strategy: str = "parent_child"
+    embedder_strategy: str = "bge_api"
+    embedding_model_name: str = "bge-small-en-v1.5"
+    chroma_path: str = "data/processed/chroma"
+    chroma_collection: str = "finance_sample_500_parent_child"
+    metrics_db_path: str = "data/processed/metrics.sqlite3"
+    chunk_size: int = 350
+    chunk_overlap: int = 50
+    retrieval_limit: int = 40
+
+    @classmethod
+    def from_env(cls) -> "AppConfig":
+        _load_local_env()
+        return cls(
+            search_strategy=os.getenv("SEARCH_STRATEGY", cls.search_strategy),
+            reranker_model=os.getenv("RERANKER_MODEL", cls.reranker_model),
+            rag_strategy=os.getenv("RAG_STRATEGY", cls.rag_strategy),
+            prompt_strategy=os.getenv("PROMPT_STRATEGY", cls.prompt_strategy),
+            answer_strategy=os.getenv("ANSWER_STRATEGY", cls.answer_strategy),
+            use_multi_agent_graph=_parse_bool(
+                os.getenv("USE_MULTI_AGENT_GRAPH"),
+                cls.use_multi_agent_graph,
+            ),
+            agent_max_attempts=int(os.getenv("AGENT_MAX_ATTEMPTS", str(cls.agent_max_attempts))),
+            agent_top_k=int(os.getenv("AGENT_TOP_K", str(cls.agent_top_k))),
+            memory_strategy=os.getenv("MEMORY_STRATEGY", cls.memory_strategy),
+            evaluator_strategy=os.getenv("EVALUATOR_STRATEGY", cls.evaluator_strategy),
+            chunking_strategy=os.getenv("CHUNKING_STRATEGY", cls.chunking_strategy),
+            embedder_strategy=os.getenv("EMBEDDER_STRATEGY", cls.embedder_strategy),
+            embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", cls.embedding_model_name),
+            chroma_path=os.getenv("CHROMA_PATH", cls.chroma_path),
+            chroma_collection=os.getenv("CHROMA_COLLECTION", cls.chroma_collection),
+            metrics_db_path=os.getenv("METRICS_DB_PATH", cls.metrics_db_path),
+            chunk_size=int(os.getenv("CHUNK_SIZE", str(cls.chunk_size))),
+            chunk_overlap=int(os.getenv("CHUNK_OVERLAP", str(cls.chunk_overlap))),
+            retrieval_limit=int(os.getenv("RETRIEVAL_LIMIT", str(cls.retrieval_limit))),
+        )

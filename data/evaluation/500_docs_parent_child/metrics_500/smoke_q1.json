@@ -1,0 +1,147 @@
+{
+  "config": {
+    "search_strategy": "hybrid_reranker",
+    "chunking_strategy": "parent_child",
+    "retrieval_limit": 40,
+    "max_docs_to_generator": 5,
+    "max_tokens_configured": 512
+  },
+  "retrieval_summary": {
+    "k": 5,
+    "evaluated_count": 1,
+    "mean_recall": 1.0,
+    "mean_mrr": 1.0
+  },
+  "telemetry_summary": {
+    "num_queries": 1,
+    "latency_ms": {
+      "total": {
+        "mean": 19620.19,
+        "p50": 19620.19,
+        "p95": 19620.19
+      },
+      "retrieval": {
+        "mean": 0.0,
+        "p95": 0.0
+      },
+      "rerank": {
+        "mean": 0.0,
+        "p95": 0.0
+      },
+      "generation": {
+        "mean": 0.0,
+        "p95": 0.0
+      }
+    },
+    "tokens": {
+      "max_tokens_per_call": 512,
+      "prompt_total": 467,
+      "completion_total": 122,
+      "total": 589,
+      "avg_per_query": 589.0
+    },
+    "cost_usd": {
+      "total": 0.0,
+      "avg_per_query": 0.0
+    },
+    "guardrails": {
+      "blocked_queries": 0,
+      "abstained_queries": 0,
+      "total_events": 0,
+      "by_rule": {}
+    }
+  },
+  "ragas_summary": {
+    "status": "ok",
+    "evaluated_count": 1,
+    "scores": {
+      "faithfulness": 0.875,
+      "answer_relevancy": 0.8645,
+      "context_precision": 1.0
+    }
+  },
+  "results": [
+    {
+      "question_number": 1,
+      "question_id": "q2",
+      "doc_id": "7767.jpeg",
+      "gold_chunk_id": "7767.jpeg:child:0:1",
+      "relevant_chunk_ids": [
+        "7767.jpeg:child:0:1"
+      ],
+      "retrieved_doc_ids": [
+        "7767.jpeg",
+        "7767.jpeg",
+        "5314.jpeg",
+        "9009.jpeg",
+        "3304.jpeg"
+      ],
+      "retrieved_chunks": [
+        {
+          "rank": 1,
+          "chunk_id": "7767.jpeg:child:0:1",
+          "doc_id": "7767.jpeg"
+        },
+        {
+          "rank": 2,
+          "chunk_id": "7767.jpeg:child:1:0",
+          "doc_id": "7767.jpeg"
+        },
+        {
+          "rank": 3,
+          "chunk_id": "5314.jpeg:child:0:2",
+          "doc_id": "5314.jpeg"
+        },
+        {
+          "rank": 4,
+          "chunk_id": "9009.jpeg:child:1:1",
+          "doc_id": "9009.jpeg"
+        },
+        {
+          "rank": 5,
+          "chunk_id": "3304.jpeg:child:1:1",
+          "doc_id": "3304.jpeg"
+        }
+      ],
+      "cited_chunk_ids": [
+        "7767.jpeg:child:0:1"
+      ],
+      "question": "What is the product being advertised in the mall display?",
+      "ground_truth": "MAGNA",
+      "answer": "The product being advertised in the mall display is **MAGNA**, as indicated by the **Production Estimate** document (Document ID: 7767.jpeg). This document, dated October 21, 1987, is associated with **R.J. Reynolds Tobacco Co.** and specifies a **MALL DISPLAY 50\"x40\" - EARTHQUAKE** as part of the job description. \n\nThis suggests that the mall display was specifically designed for the **MAGNA** product, likely as part of a marketing campaign to promote it in a retail or public space.",
+      "contexts": [
+        "[Document: 7767.jpeg | Section: 7767.jpeg:parent:0 | DocContext: ### Document Type The image depicts a \"Production Estimate\" for advertising/marketing needs, dated from 1987. ### Key De]\n### Key Details\n- **Client:** R.J. Reynolds Tobacco Co.\n- **Product:** MAGNA\n- **Media:** Transit\n- **Job Description:** MALL DISPLAY 50\"x40\" - EARTHQUAKE\n- **Date of Estimate:** 10/21/87\n- **Estimate No.:** 77MSC02M0R1\n- **Job Number:** 8984\n- **Location:** Long, Haymes & Carr Inc., 140 Charlois Blvd., Winston-Salem, NC 27103",
+        "### Insights and Observations\n- The document highlights a revision in the production costs mainly due to adjustments in assembly and printing budgets for a mall display advertisement.",
+        "[Document: 5314.jpeg | Section: 5314.jpeg:parent:0 | DocContext: ### Document Type The image displays a financial document which is an invoice. ### Key Details - **Company Name**: P.O.P]\n- **Description of Transaction**:\n  - Items Sold: 416 Rowe 'Celebrity and Riviera' cigarette merchandising machines equipped with 'Pall Mall Gold' display panel\n- **Quantity**: Shipped by Rove International, Inc. for the month of October 1970.\n- **Unit Cost**: $5.00 each\n- **Total Cost**: $2,080.00",
+        "[Document: 9009.jpeg | Section: 9009.jpeg:parent:1 | DocContext: ### Document Type - The image shows an **Invoice** from Sports Illustrated Magazine. ### Key Details - **Invoice Number:]\n- **Historical Context:** Given the year (1985) and the advertised product (cigarettes), this invoice represents a period in American advertising history before the public smoking bans and intense scrutiny over tobacco advertising took full effect.",
+        "- The inclusion of permanent advertising components such as a lighted header card and a hinged counter mat suggests an effort to enhance product visibility and customer interest consistently."
+      ],
+      "recall": 1.0,
+      "mrr": 1.0,
+      "ragas": {
+        "faithfulness": 0.875,
+        "answer_relevancy": 0.8645,
+        "context_precision": 1.0
+      },
+      "langfuse_trace_id": "3f5082aa8fcf5b534a6518bfff7ce7c1",
+      "abstained": false,
+      "blocked": false,
+      "telemetry": {
+        "latencies_ms": {
+          "guardrail_input_ms": 0.010199990356341004,
+          "pipeline_ms": 19620.034999999916,
+          "guardrail_context_ms": 0.0049000082071870565,
+          "guardrail_output_ms": 0.11729999096132815,
+          "total_ms": 19620.193500013556
+        },
+        "max_tokens_configured": 512,
+        "prompt_tokens": 467,
+        "completion_tokens": 122,
+        "total_tokens": 589,
+        "token_source": "estimated",
+        "estimated_cost_usd": 0.0,
+        "guardrail_events": []
+      }
+    }
+  ]
+}

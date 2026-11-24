@@ -1,0 +1,15 @@
+E2E EVALUATION PER-QUESTION DIAGNOSTIC REPORT
+======================================================================================================================================================
+Total Queries : 1
+Retrieval     : {"k": 5, "evaluated_count": 1, "mean_recall": 1.0, "mean_mrr": 1.0}
+RAGAS         : {"status": "ok", "evaluated_count": 1, "scores": {"faithfulness": 0.875, "answer_relevancy": 0.8645, "context_precision": 1.0}}
+Telemetry     : {"num_queries": 1, "latency_ms": {"total": {"mean": 19620.19, "p50": 19620.19, "p95": 19620.19}, "retrieval": {"mean": 0.0, "p95": 0.0}, "rerank": {"mean": 0.0, "p95": 0.0}, "generation": {"mean": 0.0, "p95": 0.0}}, "tokens": {"max_tokens_per_call": 512, "prompt_total": 467, "completion_total": 122, "total": 589, "avg_per_query": 589.0}, "cost_usd": {"total": 0.0, "avg_per_query": 0.0}, "guardrails": {"blocked_queries": 0, "abstained_queries": 0, "total_events": 0, "by_rule": {}}}
+======================================================================================================================================================
+
+Q# | Q_ID | Doc_ID    | MaxTok | InTok | OutTok | Cost($)  | Lat(ms) | Recall | MRR    | Faith  | AnsRel | CtxPrec | Flags | Question                                        
+---+------+-----------+--------+-------+--------+----------+---------+--------+--------+--------+--------+---------+-------+-------------------------------------------------
+1  | q2   | 7767.jpeg | 512    | 467   | 122    | 0.000000 | 19620.2 | 1.00   | 1.0000 | 0.8750 | 0.8645 | 1.0000  | -     | What is the product being advertised in the m...
+
+PER-QUESTION GOLD ANSWER, GOLD CHUNK ID, RETRIEVED CHUNK IDS & CITATIONS
+======================================================================================================================================================
+Q#1 (q2) | GoldAns: MAGNA | GoldChunkID: 7767.jpeg:child:0:1 | Retrieved(Rank:ChunkID): [#1:7767.jpeg:child:0:1, #2:7767.jpeg:child:1:0, #3:5314.jpeg:child:0:2, #4:9009.jpeg:child:1:1, #5:3304.jpeg:child:1:1] | CitedChunkIDs: [7767.jpeg:child:0:1]
