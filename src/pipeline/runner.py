@@ -21,6 +21,54 @@ from src.strategies import (
 
 logger = logging.getLogger(__name__)
 
+_RATE_LIMIT_MARKERS = (
+    "429",
+    "rate limit",
+    "ratelimit",
+    "quota exceeded",
+    "too many requests",
+    "resource_exhausted",
+)
+_TOKEN_LENGTH_MARKERS = (
+    "context length",
+    "context_length",
+    "maximum context",
+    "max_tokens",
+    "token limit",
+    "tokens exceed",
+    "prompt is too long",
+    "input length",
+    "413",
+)
+_NETWORK_TLS_MARKERS = (
+    "ssl",
+    "certificate",
+    "cert",
+    "timeout",
+    "timed out",
+    "connectionerror",
+    "connection refused",
+    "name or service not known",
+    "max retries exceeded",
+)
+
+
+def classify_pipeline_error(exc: Exception) -> str:
+    """Categorizes exceptions into actionable operational buckets for logs and UI."""
+    exc_type = type(exc).__name__.lower()
+    msg = str(exc).lower()
+    combined = f"{exc_type} {msg}"
+
+    if "ratelimitexhausted" in exc_type or any(m in combined for m in _RATE_LIMIT_MARKERS):
+        return "rate_limit"
+    if any(m in combined for m in _TOKEN_LENGTH_MARKERS):
+        return "token_or_context_length"
+    if any(m in combined for m in _NETWORK_TLS_MARKERS):
+        return "network_or_tls"
+    if isinstance(exc, (ValueError, KeyError, TypeError)):
+        return "validation_or_config"
+    return "runtime_error"
+
 
 @dataclass
 class PipelineStrategies:
@@ -77,7 +125,15 @@ def _extract_graph_steps(state_out: dict[str, Any]) -> list[str]:
             node = entry.split(":", 1)[0].strip()
             if node and node not in node_names:
                 node_names.append(node)
-    return node_names or ["supervisor", "query_planning", "retrieval", "evidence_analysis", "answer_generation", "verification", "finalize"]
+    return node_names or [
+        "supervisor",
+        "query_planning",
+        "retrieval",
+        "evidence_analysis",
+        "answer_generation",
+        "verification",
+        "finalize",
+    ]
 
 
 def _reranked_to_evidence(reranked_docs: list[dict[str, Any]]) -> list[Evidence]:
@@ -97,6 +153,41 @@ def _reranked_to_evidence(reranked_docs: list[dict[str, Any]]) -> list[Evidence]
     return out
 
 
+def _safe_memory_update(
+    memory: MemoryStrategyBase,
+    session_id: str,
+    question: str,
+    answer_text: str,
+) -> None:
+    try:
+        memory.add(session_id, question, answer_text)
+    except Exception as exc:
+        logger.warning(
+            "MEMORY_WRITE_FAILED | session_id=%s | error_type=%s | detail=%s",
+            session_id,
+            type(exc).__name__,
+            exc,
+        )
+
+
+def _safe_evaluate(
+    evaluator: EvaluatorBase,
+    answer: dict[str, Any],
+    evidence: list[Evidence],
+    expected_answer: str | None,
+) -> dict[str, Any]:
+    try:
+        return evaluator.evaluate(answer, evidence, expected_answer)
+    except Exception as exc:
+        logger.warning(
+            "EVALUATOR_FAILED | evaluator=%s | error_type=%s | detail=%s",
+            type(evaluator).__name__,
+            type(exc).__name__,
+            exc,
+        )
+        return {}
+
+
 def run_pipeline(
     question: str,
     documents: list[Document],
@@ -106,6 +197,7 @@ def run_pipeline(
     strategies: PipelineStrategies | None = None,
     scope: str = "global",
     doc_id: str | None = None,
+    callbacks: list[Any] | None = None,
 ) -> dict:
     """Run agent StateGraph when configured, otherwise linear pipeline."""
     choices = strategies or PipelineStrategies()
@@ -114,26 +206,66 @@ def run_pipeline(
     router = choices.router or route_request
 
     validate(question)
+    route = router(question, image)
+    q_clean = question.strip()
+    est_q_tokens = max(1, (len(q_clean) + 3) // 4)
+    total_doc_chars = sum(len(getattr(d, "content", "") or "") for d in (documents or []))
+
     logger.info(
-        "PIPELINE_STARTED | session_id=%s | scope=%s | doc_id=%s",
+        "PIPELINE_STARTED | session_id=%s | scope=%s | doc_id=%s | route=%s | q_chars=%d | est_q_tokens=%d | docs=%d | total_doc_chars=%d | has_image=%s",
         session_id,
         scope,
         doc_id,
+        route,
+        len(q_clean),
+        est_q_tokens,
+        len(documents or []),
+        total_doc_chars,
+        image is not None,
     )
-    route = router(question, image)
-    history = choices.memory.get(session_id)
+
+    try:
+        history = choices.memory.get(session_id)
+    except Exception as exc:
+        logger.warning(
+            "MEMORY_READ_FAILED | session_id=%s | error_type=%s | detail=%s",
+            session_id,
+            type(exc).__name__,
+            exc,
+        )
+        history = []
 
     if choices.agent_graph is not None:
         graph_started = perf_counter()
-        state_out = choices.agent_graph.invoke(
-            {
-                "question": question,
-                "documents": documents,
-            }
-        )
+        invoke_kwargs: dict[str, Any] = {}
+        if callbacks:
+            invoke_kwargs["config"] = {"callbacks": callbacks}
+
+        try:
+            state_out = choices.agent_graph.invoke(
+                {
+                    "question": q_clean,
+                    "documents": documents,
+                },
+                **invoke_kwargs,
+            )
+        except Exception as exc:
+            err_cat = classify_pipeline_error(exc)
+            logger.exception(
+                "AGENT_GRAPH_FAILED | session_id=%s | category=%s | duration_ms=%.2f | q_chars=%d | est_q_tokens=%d | error_type=%s",
+                session_id,
+                err_cat,
+                (perf_counter() - graph_started) * 1000,
+                len(q_clean),
+                est_q_tokens,
+                type(exc).__name__,
+            )
+            raise
+
         final_output = state_out.get("final_output") or {}
         reranked_docs = state_out.get("reranked_docs") or []
         evidence = _reranked_to_evidence(reranked_docs)
+        evidence_chars = sum(len(ev.text) for ev in evidence)
 
         raw_citations = final_output.get("citations") or state_out.get("citations") or []
         doc_by_chunk = {
@@ -164,14 +296,17 @@ def run_pipeline(
             "citations": normalized_citations,
         }
         logger.info(
-            "AGENT_GRAPH_COMPLETED | duration_ms=%.2f | refused=%s | citations=%s",
+            "AGENT_GRAPH_COMPLETED | session_id=%s | duration_ms=%.2f | evidence_count=%d | evidence_chars=%d | refused=%s | citations=%s",
+            session_id,
             (perf_counter() - graph_started) * 1000,
+            len(evidence),
+            evidence_chars,
             answer["should_refuse"],
             answer["citations"],
         )
-        metrics = choices.evaluator.evaluate(answer, evidence, expected_answer)
+        metrics = _safe_evaluate(choices.evaluator, answer, evidence, expected_answer)
         answer = response_check(answer, evidence)
-        choices.memory.add(session_id, question, answer["answer"])
+        _safe_memory_update(choices.memory, session_id, q_clean, answer.get("answer", ""))
         steps = ["validate request", f"route: {route}", *_extract_graph_steps(state_out)]
 
         return {
@@ -184,55 +319,79 @@ def run_pipeline(
             "graph_state": state_out,
         }
 
-    evidence = choices.rag.retrieve(
-        question,
-        documents,
-        image,
-        scope=scope,
-        doc_id=doc_id,
-    )
+    retrieval_started = perf_counter()
+    try:
+        evidence = choices.rag.retrieve(
+            q_clean,
+            documents,
+            image,
+            scope=scope,
+            doc_id=doc_id,
+        )
+    except Exception as exc:
+        err_cat = classify_pipeline_error(exc)
+        logger.exception(
+            "RETRIEVAL_FAILED | session_id=%s | category=%s | duration_ms=%.2f | q_chars=%d | error_type=%s",
+            session_id,
+            err_cat,
+            (perf_counter() - retrieval_started) * 1000,
+            len(q_clean),
+            type(exc).__name__,
+        )
+        raise
+
+    evidence_chars = sum(len(item.text or "") for item in (evidence or []))
+    est_prompt_tokens = max(1, (len(q_clean) + evidence_chars + 3) // 4)
     logger.info(
-        "RETRIEVAL_COMPLETED | count=%d | chunks=%s",
+        "RETRIEVAL_COMPLETED | session_id=%s | duration_ms=%.2f | count=%d | evidence_chars=%d | est_prompt_tokens=%d",
+        session_id,
+        (perf_counter() - retrieval_started) * 1000,
         len(evidence),
-        [
-            {
-                "doc_id": item.doc_id,
-                "chunk_id": item.chunk_id,
-                "score": round(item.score, 4),
-            }
-            for item in evidence
-        ],
+        evidence_chars,
+        est_prompt_tokens,
     )
     logger.info(
-        "ANSWER_GENERATION_STARTED | strategy=%s | evidence_count=%d",
+        "ANSWER_GENERATION_STARTED | session_id=%s | strategy=%s | evidence_count=%d | est_prompt_tokens=%d",
+        session_id,
         type(choices.answerer).__name__,
         len(evidence),
+        est_prompt_tokens,
     )
 
     answer_started = perf_counter()
-
     try:
         answer = choices.answerer.answer(
-            question=question,
+            question=q_clean,
             evidence=evidence,
             prompt=choices.prompt,
             history=history,
             documents=documents,
         )
-    except Exception:
-        logger.exception("ANSWER_GENERATION_FAILED")
+    except Exception as exc:
+        err_cat = classify_pipeline_error(exc)
+        logger.exception(
+            "ANSWER_GENERATION_FAILED | session_id=%s | category=%s | strategy=%s | duration_ms=%.2f | evidence_chars=%d | est_prompt_tokens=%d | error_type=%s",
+            session_id,
+            err_cat,
+            type(choices.answerer).__name__,
+            (perf_counter() - answer_started) * 1000,
+            evidence_chars,
+            est_prompt_tokens,
+            type(exc).__name__,
+        )
         raise
 
     logger.info(
-        "ANSWER_GENERATION_COMPLETED | duration_ms=%.2f | refused=%s | citations=%s",
+        "ANSWER_GENERATION_COMPLETED | session_id=%s | duration_ms=%.2f | refused=%s | citations=%s",
+        session_id,
         (perf_counter() - answer_started) * 1000,
         answer.get("should_refuse"),
         answer.get("citations"),
     )
 
-    metrics = choices.evaluator.evaluate(answer, evidence, expected_answer)
+    metrics = _safe_evaluate(choices.evaluator, answer, evidence, expected_answer)
     answer = response_check(answer, evidence)
-    choices.memory.add(session_id, question, answer["answer"])
+    _safe_memory_update(choices.memory, session_id, q_clean, answer.get("answer", ""))
 
     return {
         "answer": answer,

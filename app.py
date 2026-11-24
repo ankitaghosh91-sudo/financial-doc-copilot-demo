@@ -1,27 +1,37 @@
 """Small Streamlit UI for the injectable financial-document pipeline."""
 
+from contextlib import nullcontext
 import inspect
 import json
 import logging
+import os
 from pathlib import Path
 import time
 from typing import Any
 import uuid
 
+from dotenv import load_dotenv
 import streamlit as st
 
-from src.config import AppConfig
-from src.data import load_saved_sample
-from src.evaluation.llm_client import RateLimitExhaustedError
-from src.evaluation.ragas_eval import run_ragas_evaluation
-from src.logging_config import configure_logging
-from src.models.records import Document, QAPair
-from src.pipeline import build_strategies_from_config, run_pipeline
-from src.agents.graph import format_query_flow
+load_dotenv()
+if os.getenv("LANGFUSE_HOST") and not os.getenv("LANGFUSE_BASE_URL"):
+    os.environ["LANGFUSE_BASE_URL"] = os.getenv("LANGFUSE_HOST")
+
+from src.config import AppConfig  # noqa: E402
+from src.data import load_saved_sample  # noqa: E402
+from src.evaluation.llm_client import RateLimitExhaustedError  # noqa: E402
+from src.evaluation.ragas_eval import run_ragas_evaluation  # noqa: E402
+from src.logging_config import configure_logging  # noqa: E402
+from src.models.records import Document, QAPair  # noqa: E402
+from src.pipeline import build_strategies_from_config, run_pipeline  # noqa: E402
+from src.pipeline.runner import classify_pipeline_error  # noqa: E402
+from src.agents.graph import format_query_flow  # noqa: E402
 
 configure_logging()
 
 logger = logging.getLogger(__name__)
+
+MAX_QUESTION_CHARS = int(os.getenv("MAX_QUESTION_CHARS", "4000"))
 
 SAMPLE_QUESTIONS: list[str] = [
     "What was the rate for a 6x21 ad in Tacoma?",
@@ -86,6 +96,46 @@ def _load_documents_from_500_or_default() -> tuple[list, str]:
     return load_saved_sample(), "default_sample"
 
 
+def _init_langfuse_runtime() -> tuple[Any | None, Any | None, Any | None]:
+    """Matches evaluate_e2e_ragas.py: returns (client, propagate_attributes, handler)."""
+    if not (os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")):
+        logger.info("LANGFUSE_DISABLED | missing_credentials=True")
+        return None, None, None
+    try:
+        from langfuse import get_client, propagate_attributes
+        from langfuse.langchain import CallbackHandler
+
+        client = get_client()
+        handler = CallbackHandler()
+        logger.info("LANGFUSE_INITIALIZED | host=%s", os.getenv("LANGFUSE_BASE_URL") or "default")
+        return client, propagate_attributes, handler
+    except Exception as exc:
+        logger.warning("LANGFUSE_INIT_FAILED | reason=%s", exc)
+        return None, None, None
+
+
+def _flush_langfuse(client: Any | None) -> None:
+    if client is None:
+        return
+    try:
+        client.flush()
+    except Exception:
+        logger.warning("LANGFUSE_FLUSH_FAILED", exc_info=True)
+
+
+def _mark_span_error(span: Any | None, exc: Exception, category: str) -> None:
+    if span is None:
+        return
+    try:
+        span.update(
+            level="ERROR",
+            status_message=f"[{category}] {type(exc).__name__}: {exc}",
+            output={"error_category": category, "error_type": type(exc).__name__},
+        )
+    except Exception:
+        logger.debug("LANGFUSE_SPAN_ERROR_UPDATE_FAILED", exc_info=True)
+
+
 @st.cache_resource
 def load_app():
     logger.info("APPLICATION_INITIALIZATION_STARTED")
@@ -105,7 +155,15 @@ def load_app():
         from src.generate.generate_answer import build_model_callable
 
         logger.info("LLM_INITIALIZATION_STARTED")
-        model_callable = build_model_callable()
+        try:
+            model_callable = build_model_callable()
+        except Exception as exc:
+            logger.exception(
+                "LLM_INITIALIZATION_FAILED | category=%s | error_type=%s",
+                classify_pipeline_error(exc),
+                type(exc).__name__,
+            )
+            raise
         logger.info("LLM_INITIALIZATION_COMPLETED")
 
     strategies = build_strategies_from_config(
@@ -208,6 +266,7 @@ def _invoke_pipeline_with_stages(
     strategies: Any,
     active_banner,
     trace_box,
+    langfuse_handler: Any | None = None,
     step_delay_s: float = 0.14,
 ) -> tuple[dict, list[str]]:
     trace_lines: list[str] = []
@@ -251,7 +310,7 @@ def _invoke_pipeline_with_stages(
             )
         elif stage_name in {"llm", "generator", "analyst"}:
             _push_stage(
-                "🤖 **Final LLM working...** Synthesizing grounded answer from evidence.",
+                "🤖 **Final LLM working...** Synthesizing grounded response from evidence.",
                 "🤖 **Final LLM:** Generated grounded response.",
             )
         elif stage_name == "verifier":
@@ -268,6 +327,11 @@ def _invoke_pipeline_with_stages(
     }
     if "on_stage" in sig.parameters:
         kwargs["on_stage"] = _on_stage
+    if langfuse_handler is not None:
+        if "callbacks" in sig.parameters:
+            kwargs["callbacks"] = [langfuse_handler]
+        elif "langfuse_handler" in sig.parameters:
+            kwargs["langfuse_handler"] = langfuse_handler
 
     result = run_pipeline(question, documents, **kwargs)
     return result, trace_lines
@@ -486,6 +550,61 @@ def _render_ragas_section() -> None:
         st.dataframe(st.session_state.ragas_rows, width="stretch")
 
 
+def _render_query_failure(exc: Exception, session_id: str, question_len: int) -> None:
+    err_cat = classify_pipeline_error(exc)
+    if err_cat == "rate_limit" or isinstance(exc, RateLimitExhaustedError):
+        logger.warning(
+            "UI_QUERY_RATE_LIMITED | session_id=%s | q_chars=%d | error_type=%s | detail=%s",
+            session_id,
+            question_len,
+            type(exc).__name__,
+            exc,
+        )
+        st.warning(
+            "⏳ Rate limit reached across LLM providers. Wait a moment and retry, or check provider rate quotas."
+        )
+    elif err_cat == "token_or_context_length":
+        logger.error(
+            "UI_QUERY_TOKEN_LIMIT_ERROR | session_id=%s | q_chars=%d | error_type=%s | detail=%s",
+            session_id,
+            question_len,
+            type(exc).__name__,
+            exc,
+        )
+        st.warning(
+            "📏 Query or retrieved context exceeded the model token/context window. Try a shorter question or lower `RETRIEVAL_LIMIT` / `AGENT_TOP_K`."
+        )
+    elif err_cat == "network_or_tls":
+        logger.error(
+            "UI_QUERY_NETWORK_TLS_ERROR | session_id=%s | q_chars=%d | error_type=%s | detail=%s",
+            session_id,
+            question_len,
+            type(exc).__name__,
+            exc,
+        )
+        st.error(
+            "🔌 Network or TLS/certificate issue reaching model/embedder endpoints. Verify VM reachability and `.crt` paths in `.env`."
+        )
+    elif err_cat == "validation_or_config":
+        logger.warning(
+            "UI_QUERY_VALIDATION_ERROR | session_id=%s | q_chars=%d | error_type=%s | detail=%s",
+            session_id,
+            question_len,
+            type(exc).__name__,
+            exc,
+        )
+        st.warning(str(exc) or "Invalid query or configuration.")
+    else:
+        logger.exception(
+            "UI_QUERY_FAILED | session_id=%s | category=%s | q_chars=%d | error_type=%s",
+            session_id,
+            err_cat,
+            question_len,
+            type(exc).__name__,
+        )
+        st.error("The query failed unexpectedly. Check `logs/application.log` for details.")
+
+
 def main():
     st.set_page_config(page_title="Financial Document Copilot", page_icon="📄")
     st.title("Financial Document Copilot")
@@ -494,10 +613,16 @@ def main():
     try:
         documents, strategies, config, dataset_source = load_app()
     except FileNotFoundError:
+        logger.error("STARTUP_SAMPLE_DATA_MISSING")
         st.error("Sample data is missing. Run `uv run python -m scripts.download_sample`.")
         return
-    except ValueError as exc:
-        st.error(f"Invalid strategy config: {exc}")
+    except Exception as exc:
+        logger.exception(
+            "STARTUP_INITIALIZATION_FAILED | category=%s | error_type=%s",
+            classify_pipeline_error(exc),
+            type(exc).__name__,
+        )
+        st.error(f"Application initialization failed: {exc}")
         return
 
     st.write(f"Loaded {len(documents)} documents (`{dataset_source}`).")
@@ -517,6 +642,8 @@ def main():
     if "ragas_rows" not in st.session_state:
         st.session_state.ragas_rows = []
 
+    langfuse_client, propagate_fn, langfuse_handler = _init_langfuse_runtime()
+
     custom_question = st.text_input("Ask a question about the documents")
     selected_sample = st.selectbox(
         "Or pick a sample question",
@@ -526,73 +653,143 @@ def main():
     question = (custom_question.strip() or selected_sample).strip()
     uploaded_image = st.file_uploader("Optional image", type=["png", "jpg", "jpeg"])
 
-    if st.button("Ask") and question:
-        image = uploaded_image.getvalue() if uploaded_image else None
-        logger.info(
-            "USER_QUERY_SUBMITTED | question_length=%d | session_id=%s",
-            len(question),
-            st.session_state.session_id,
-        )
-        try:
-            with st.status("Multi-agent pipeline running...", expanded=True) as status_box:
-                active_banner = st.empty()
-                trace_box = st.empty()
-                active_banner.info("🧭 **Supervisor Agent working...** Starting pipeline.")
-
-                result, trace_lines = _invoke_pipeline_with_stages(
-                    question=question,
-                    documents=documents,
-                    session_id=st.session_state.session_id,
-                    image=image,
-                    strategies=strategies,
-                    active_banner=active_banner,
-                    trace_box=trace_box,
-                    step_delay_s=0.14,
-                )
-
-                trace_lines = _replay_completed_stages(
-                    result=result,
-                    question=question,
-                    active_banner=active_banner,
-                    trace_box=trace_box,
-                    existing_lines=trace_lines,
-                    step_delay_s=0.14,
-                )
-
-                result["_agent_trace"] = trace_lines
-                active_banner.success("✨ **Pipeline finished** — answer ready below.")
-                trace_box.markdown("\n".join(f"- {line}" for line in trace_lines))
-
-                status_box.update(
-                    label="Multi-agent pipeline completed",
-                    state="complete",
-                    expanded=False,
-                )
-            logger.info("UI_QUERY_COMPLETED")
-        except RateLimitExhaustedError as exc:
-            st.warning(f"⏳ Rate limit reached across LLM providers: {exc}")
-            return
-        except ValueError as exc:
-            st.warning(str(exc))
-            return
-        except Exception:
-            logger.exception("UI_QUERY_FAILED")
-            st.error("The query failed. Check logs/application.log for details.")
-            return
-
-        st.session_state.last_result = result
-
-        answer_obj = result.get("answer", {})
-        evidence_list = result.get("evidence", [])
-        st.session_state.eval_records.append(
-            {
-                "question": question,
-                "answer": answer_obj.get("answer", ""),
-                "evidence": evidence_list,
-                "should_refuse": bool(answer_obj.get("should_refuse", False)),
-                "reason": str(answer_obj.get("reason") or ""),
+    if st.button("Ask"):
+        if not question:
+            st.warning("Enter or select a question before submitting.")
+        elif len(question) > MAX_QUESTION_CHARS:
+            logger.warning(
+                "UI_QUERY_TOO_LONG | session_id=%s | q_chars=%d | max_chars=%d",
+                st.session_state.session_id,
+                len(question),
+                MAX_QUESTION_CHARS,
+            )
+            st.warning(
+                f"Question is too long ({len(question)} chars; max {MAX_QUESTION_CHARS}). Please shorten it."
+            )
+        else:
+            image = uploaded_image.getvalue() if uploaded_image else None
+            logger.info(
+                "USER_QUERY_SUBMITTED | q_chars=%d | session_id=%s | has_image=%s",
+                len(question),
+                st.session_state.session_id,
+                image is not None,
+            )
+            trace_attrs = {
+                "session_id": st.session_state.session_id,
+                "tags": ["streamlit_live", "financial_rag"],
+                "metadata": {
+                    "session_id": st.session_state.session_id,
+                    "search_strategy": config.search_strategy,
+                    "rag_strategy": config.rag_strategy,
+                },
             }
-        )
+            prop_ctx = (
+                propagate_fn(**trace_attrs)
+                if (propagate_fn is not None and langfuse_client is not None)
+                else nullcontext()
+            )
+
+            try:
+                with st.status("Multi-agent pipeline running...", expanded=True) as status_box:
+                    active_banner = st.empty()
+                    trace_box = st.empty()
+                    active_banner.info("🧭 **Supervisor Agent working...** Starting pipeline.")
+
+                    with prop_ctx:
+                        if langfuse_client is not None:
+                            with langfuse_client.start_as_current_observation(
+                                as_type="span",
+                                name="streamlit-live-query",
+                                input={
+                                    "question": question,
+                                    "q_chars": len(question),
+                                    "session_id": st.session_state.session_id,
+                                },
+                            ) as root_span:
+                                try:
+                                    result, trace_lines = _invoke_pipeline_with_stages(
+                                        question=question,
+                                        documents=documents,
+                                        session_id=st.session_state.session_id,
+                                        image=image,
+                                        strategies=strategies,
+                                        active_banner=active_banner,
+                                        trace_box=trace_box,
+                                        langfuse_handler=langfuse_handler,
+                                        step_delay_s=0.14,
+                                    )
+                                    answer_obj = result.get("answer") or {}
+                                    evidence_list = result.get("evidence") or []
+                                    ev_chars = sum(
+                                        len(getattr(ev, "text", "") or "") for ev in evidence_list
+                                    )
+                                    root_span.update(
+                                        output={
+                                            "answer": answer_obj.get("answer", ""),
+                                            "citations": answer_obj.get("citations") or [],
+                                            "evidence_count": len(evidence_list),
+                                            "evidence_chars": ev_chars,
+                                        }
+                                    )
+                                except Exception as exc:
+                                    _mark_span_error(
+                                        root_span, exc, classify_pipeline_error(exc)
+                                    )
+                                    raise
+                        else:
+                            result, trace_lines = _invoke_pipeline_with_stages(
+                                question=question,
+                                documents=documents,
+                                session_id=st.session_state.session_state.session_id,
+                                image=image,
+                                strategies=strategies,
+                                active_banner=active_banner,
+                                trace_box=trace_box,
+                                langfuse_handler=langfuse_handler,
+                                step_delay_s=0.14,
+                            )
+
+                    trace_lines = _replay_completed_stages(
+                        result=result,
+                        question=question,
+                        active_banner=active_banner,
+                        trace_box=trace_box,
+                        existing_lines=trace_lines,
+                        step_delay_s=0.14,
+                    )
+
+                    result["_agent_trace"] = trace_lines
+                    active_banner.success("✨ **Pipeline finished** — answer ready below.")
+                    trace_box.markdown("\n".join(f"- {line}" for line in trace_lines))
+
+                    status_box.update(
+                        label="Multi-agent pipeline completed",
+                        state="complete",
+                        expanded=False,
+                    )
+                _flush_langfuse(langfuse_client)
+                logger.info("UI_QUERY_COMPLETED | session_id=%s", st.session_state.session_id)
+            except Exception as exc:
+                _flush_langfuse(langfuse_client)
+                _render_query_failure(exc, st.session_state.session_id, len(question))
+                if _render_latest_result and st.session_state.last_result is not None:
+                    _render_latest_result(st.session_state.last_result)
+                _render_ragas_section()
+                return
+
+            st.session_state.last_result = result
+
+            answer_obj = result.get("answer", {})
+            evidence_list = result.get("evidence", [])
+            st.session_state.eval_records.append(
+                {
+                    "question": question,
+                    "answer": answer_obj.get("answer", ""),
+                    "evidence": evidence_list,
+                    "should_refuse": bool(answer_obj.get("should_refuse", False)),
+                    "reason": str(answer_obj.get("reason") or ""),
+                }
+            )
 
     if st.session_state.last_result is not None:
         _render_latest_result(st.session_state.last_result)
