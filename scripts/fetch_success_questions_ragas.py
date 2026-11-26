@@ -9,7 +9,7 @@ DEFAULT_INPUT_FILE = (
     / "evaluation"
     / "500_docs_parent_child"
     / "metrics_500"
-    / "e2e_report_full_v4.txt"
+    / "e2e_report_full_v5.txt"
 )
 DEFAULT_OUTPUT_FILE = (
     PROJECT_ROOT
@@ -17,7 +17,7 @@ DEFAULT_OUTPUT_FILE = (
     / "evaluation"
     / "500_docs_parent_child"
     / "metrics_500"
-    / "matched_gold_retrieved_citations.txt"
+    / "matched_gold_retrieved_citations_v5.txt"
 )
 
 DIAG_ROW_RE = re.compile(

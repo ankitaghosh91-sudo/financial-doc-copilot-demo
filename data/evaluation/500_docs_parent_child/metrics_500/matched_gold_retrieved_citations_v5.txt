@@ -1,0 +1,224 @@
+MATCHED QUESTIONS: GOLD CHUNK ID IN BOTH RETRIEVED & CITED CHUNKS
+Total Queries Scanned : 200
+Total Matched Queries : 22
+====================================================================================================
+
+[1] Q#1 (q2) | Doc_ID: 7767.jpeg
+Question           : What is the product being advertised in the mall displa
+Gold Answer        : MAGNA
+Matched Chunk IDs  : ['7767.jpeg:child:0:1']
+Gold Chunk IDs     : ['7767.jpeg:child:0:1']
+Retrieved Chunk IDs: ['7767.jpeg:child:0:1', '7767.jpeg:child:1:0', '5314.jpeg:child:0:2', '9009.jpeg:child:1:1', '3304.jpeg:child:1:1']
+Cited Chunk IDs    : ['7767.jpeg:child:0:1']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=1.0000, AnsRel=0.8687, CtxPrec=1.0000, Flags=-, Lat(ms)=18696.2
+----------------------------------------------------------------------------------------------------
+
+[2] Q#4 (q11) | Doc_ID: 7766.jpeg
+Question           : What is the industry or sector that R.J. Reynolds opera
+Gold Answer        : R.J. Reynolds operates in the tobacco products industry.
+Matched Chunk IDs  : ['7766.jpeg:child:1:2']
+Gold Chunk IDs     : ['7766.jpeg:child:1:2', '7766.jpeg:child:0:0']
+Retrieved Chunk IDs: ['7766.jpeg:child:1:2', '2735.jpeg:child:1:3', '7766.jpeg:child:1:1', '1011.jpeg:child:1:0', '3035.jpeg:child:1:5']
+Cited Chunk IDs    : ['s:child:0:0', '7766.jpeg:child:1:2', '7997.jpeg:child:0:0', '7674.jpeg:child:0:0', '2735.jpeg:child:1:3', '3035.jpeg:child:1:5', 'outlines:child:0:0', '2303.jpeg:child:0:0', '774.jpeg:child:0:0']
+Scores & Flags     : Recall=0.50, MRR=1.0000, Faith=0.8906, AnsRel=0.9762, CtxPrec=0.8875, Flags=ungrounded_currency_figure, Lat(ms)=36237.0
+----------------------------------------------------------------------------------------------------
+
+[3] Q#29 (q9) | Doc_ID: 2726.jpeg
+Question           : What is the total budget for Tournament Entertainment (
+Gold Answer        : $16,250
+Matched Chunk IDs  : ['2726.jpeg:child:1:3']
+Gold Chunk IDs     : ['2726.jpeg:child:1:3', '2726.jpeg:child:2:0']
+Retrieved Chunk IDs: ['2726.jpeg:child:1:3', '2470.jpeg:child:0:3', '2199.jpeg:child:1:3', '1556.jpeg:child:1:3', '2726.jpeg:child:1:1']
+Cited Chunk IDs    : ['2726.jpeg:child:1:3']
+Scores & Flags     : Recall=0.50, MRR=1.0000, Faith=0.8477, AnsRel=0.9010, CtxPrec=1.0000, Flags=-, Lat(ms)=44557.2
+----------------------------------------------------------------------------------------------------
+
+[4] Q#30 (q8) | Doc_ID: 3230.jpeg
+Question           : What is the significance of the 'OBACCO INSTITUTE - JC'
+Gold Answer        : The significance is unclear due to text cutoff, but it may indicate involvement or associa
+Matched Chunk IDs  : ['3230.jpeg:child:0:2']
+Gold Chunk IDs     : ['3230.jpeg:child:0:2', '3230.jpeg:child:0:0']
+Retrieved Chunk IDs: ['3230.jpeg:child:0:2', '423.jpeg:child:1:2', '282.jpeg:child:2:1', '591.jpeg:child:1:2', '3672.jpeg:child:0:4']
+Cited Chunk IDs    : ['3230.jpeg:child:0:2', 'like:child:0:0', 's:child:0:0']
+Scores & Flags     : Recall=0.50, MRR=1.0000, Faith=1.0000, AnsRel=0.9105, CtxPrec=0.9167, Flags=-, Lat(ms)=55421.7
+----------------------------------------------------------------------------------------------------
+
+[5] Q#67 (q5) | Doc_ID: 8238.jpeg
+Question           : What is the unit price of the services provided?
+Gold Answer        : $5,000.00
+Matched Chunk IDs  : ['8238.jpeg:child:0:2']
+Gold Chunk IDs     : ['8238.jpeg:child:0:2']
+Retrieved Chunk IDs: ['8238.jpeg:child:0:2', '8237.jpeg:child:0:2', '8537.jpeg:child:0:3', '6452.jpeg:child:0:2', '8537.jpeg:child:0:2']
+Cited Chunk IDs    : ['8238.jpeg:child:0:2', 's:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=0.9181, AnsRel=0.9128, CtxPrec=1.0000, Flags=-, Lat(ms)=26576.1
+----------------------------------------------------------------------------------------------------
+
+[6] Q#79 (q7) | Doc_ID: 7593.jpeg
+Question           : What is the total cost of the goods and shipping?
+Gold Answer        : The total cost of the goods is 8,100 BF, and the shipping cost is 2,400 BF, making the gra
+Matched Chunk IDs  : ['7593.jpeg:child:0:2']
+Gold Chunk IDs     : ['7593.jpeg:child:0:2', '7593.jpeg:child:0:3']
+Retrieved Chunk IDs: ['6799.jpeg:child:1:1', '7674.jpeg:child:0:3', '7997.jpeg:child:0:3', '6207.jpeg:child:0:4', '7593.jpeg:child:0:2']
+Cited Chunk IDs    : ['s:child:0:0', '7593.jpeg:child:0:2']
+Scores & Flags     : Recall=0.50, MRR=0.2000, Faith=0.9038, AnsRel=0.8686, CtxPrec=0.7144, Flags=ungrounded_currency_figure, Lat(ms)=43573.2
+----------------------------------------------------------------------------------------------------
+
+[7] Q#82 (q2) | Doc_ID: 563.jpeg
+Question           : Who is the intended payee of the contribution request?
+Gold Answer        : The intended payee of the contribution request is 'Citizens to Elect Virginia MacDonald'.
+Matched Chunk IDs  : ['563.jpeg:child:0:2']
+Gold Chunk IDs     : ['563.jpeg:child:0:2', '563.jpeg:child:0:1', '563.jpeg:child:1:0']
+Retrieved Chunk IDs: ['563.jpeg:child:0:2', '2543.jpeg:child:0:3', '4163.jpeg:child:1:0', '581.jpeg:child:0:2', '2550.jpeg:child:0:2']
+Cited Chunk IDs    : ['563.jpeg:child:0:2', 'is:child:0:0', 's:child:0:0', 'in:child:0:0']
+Scores & Flags     : Recall=0.33, MRR=1.0000, Faith=0.9167, AnsRel=0.9335, CtxPrec=1.0000, Flags=-, Lat(ms)=34695.8
+----------------------------------------------------------------------------------------------------
+
+[8] Q#94 (q5) | Doc_ID: 5989.jpeg
+Question           : What is the amount due mentioned in the Tax Debit Note?
+Gold Answer        : $50.00
+Matched Chunk IDs  : ['5989.jpeg:child:0:2']
+Gold Chunk IDs     : ['5989.jpeg:child:0:1', '5989.jpeg:child:0:2', '5989.jpeg:child:1:1']
+Retrieved Chunk IDs: ['5989.jpeg:child:0:2', '8941.jpeg:child:1:0', '9361.jpeg:child:0:3', '7137.jpeg:child:0:3', '5989.jpeg:child:0:1']
+Cited Chunk IDs    : ['5989.jpeg:child:0:2', '-:child:0:0', 's:child:0:0']
+Scores & Flags     : Recall=0.67, MRR=1.0000, Faith=0.8131, AnsRel=1.0000, CtxPrec=0.7000, Flags=ungrounded_currency_figure, Lat(ms)=37663.5
+----------------------------------------------------------------------------------------------------
+
+[9] Q#97 (q9) | Doc_ID: 8311.jpeg
+Question           : What is the tax amount on the sales receipt?
+Gold Answer        : The tax amount on the sales receipt is $3.20.
+Matched Chunk IDs  : ['8311.jpeg:child:0:2']
+Gold Chunk IDs     : ['8311.jpeg:child:0:2']
+Retrieved Chunk IDs: ['5164.jpeg:child:1:1', '8311.jpeg:child:0:2', '5358.jpeg:child:0:2', '5137.jpeg:child:0:3', '8311.jpeg:child:0:0']
+Cited Chunk IDs    : ['8311.jpeg:child:0:2']
+Scores & Flags     : Recall=1.00, MRR=0.5000, Faith=0.9705, AnsRel=0.9235, CtxPrec=0.8928, Flags=-, Lat(ms)=42871.2
+----------------------------------------------------------------------------------------------------
+
+[10] Q#103 (q8) | Doc_ID: 3348.jpeg
+Question           : How many billboards were advertised each month?
+Gold Answer        : 1.00
+Matched Chunk IDs  : ['3348.jpeg:child:0:2']
+Gold Chunk IDs     : ['3348.jpeg:child:0:2']
+Retrieved Chunk IDs: ['5172.jpeg:child:0:2', '3348.jpeg:child:0:2', '3345.jpeg:child:0:2', '5172.jpeg:child:1:2', '3339.jpeg:child:0:3']
+Cited Chunk IDs    : ['s:child:0:0', '3348.jpeg:child:0:2', '3345.jpeg:child:0:2', '1478.jpeg:child:0:0', '5172.jpeg:child:0:2', '1101.jpeg:child:0:0', '3037.jpeg:child:0:0', '1493.jpeg:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=0.5000, Faith=0.9952, AnsRel=0.9390, CtxPrec=0.8400, Flags=-, Lat(ms)=38344.0
+----------------------------------------------------------------------------------------------------
+
+[11] Q#104 (q3) | Doc_ID: 3805.jpeg
+Question           : What is the net amount allocated to other participating
+Gold Answer        : $5,153,443
+Matched Chunk IDs  : ['3805.jpeg:child:0:1']
+Gold Chunk IDs     : ['3805.jpeg:child:0:1']
+Retrieved Chunk IDs: ['3805.jpeg:child:0:1', '9361.jpeg:child:0:3', '8475.jpeg:child:0:3', '6983.jpeg:child:0:4', '8449.jpeg:child:1:1']
+Cited Chunk IDs    : ['3805.jpeg:child:0:1']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=1.0000, AnsRel=1.0000, CtxPrec=1.0000, Flags=-, Lat(ms)=39827.6
+----------------------------------------------------------------------------------------------------
+
+[12] Q#108 (q5) | Doc_ID: 74.jpeg
+Question           : Who is the Production Manager responsible for this proj
+Gold Answer        : McGrath
+Matched Chunk IDs  : ['74.jpeg:child:0:2']
+Gold Chunk IDs     : ['74.jpeg:child:0:2']
+Retrieved Chunk IDs: ['74.jpeg:child:0:2', '1312.jpeg:child:0:1', '8.jpeg:child:0:2', '1007.jpeg:child:0:1', '7831.jpeg:child:0:2']
+Cited Chunk IDs    : ['74.jpeg:child:0:2', 'lists:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=1.0000, AnsRel=0.8628, CtxPrec=1.0000, Flags=-, Lat(ms)=14363.9
+----------------------------------------------------------------------------------------------------
+
+[13] Q#142 (q2) | Doc_ID: 9666.jpeg
+Question           : What is the income year in question for which the Tobac
+Gold Answer        : 1999
+Matched Chunk IDs  : ['9666.jpeg:child:0:1']
+Gold Chunk IDs     : ['9666.jpeg:child:0:1']
+Retrieved Chunk IDs: ['9666.jpeg:child:0:1', '3776.jpeg:child:1:1', '3776.jpeg:child:0:3', '395.jpeg:child:0:1', '3611.jpeg:child:0:0']
+Cited Chunk IDs    : ['9666.jpeg:child:0:1']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=0.9991, AnsRel=0.9975, CtxPrec=1.0000, Flags=-, Lat(ms)=17197.2
+----------------------------------------------------------------------------------------------------
+
+[14] Q#162 (q9) | Doc_ID: 3539.jpeg
+Question           : What is the phone number for corporate accounts at Gise
+Gold Answer        : (916) 922-0330
+Matched Chunk IDs  : ['3539.jpeg:child:0:1']
+Gold Chunk IDs     : ['3539.jpeg:child:0:1']
+Retrieved Chunk IDs: ['3539.jpeg:child:0:1', '3539.jpeg:child:1:0', '3362.jpeg:child:0:3', '6896.jpeg:child:0:2', '4758.jpeg:child:0:2']
+Cited Chunk IDs    : ['associated:child:0:0', '3539.jpeg:child:0:1']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=1.0000, AnsRel=1.0000, CtxPrec=1.0000, Flags=-, Lat(ms)=17592.9
+----------------------------------------------------------------------------------------------------
+
+[15] Q#165 (q1) | Doc_ID: 2399.jpeg
+Question           : What is the report period for this financial budget var
+Gold Answer        : The report period is January to October 1998.
+Matched Chunk IDs  : ['2399.jpeg:child:0:1']
+Gold Chunk IDs     : ['2399.jpeg:child:0:1']
+Retrieved Chunk IDs: ['2399.jpeg:child:0:1', '2399.jpeg:child:0:3', '3717.jpeg:child:0:1', '3717.jpeg:child:0:0', '2866.jpeg:child:1:3']
+Cited Chunk IDs    : ['2399.jpeg:child:0:1', 'Date:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=1.0000, AnsRel=0.8808, CtxPrec=1.0000, Flags=-, Lat(ms)=16615.6
+----------------------------------------------------------------------------------------------------
+
+[16] Q#173 (q5) | Doc_ID: 764.jpeg
+Question           : What is the pattern of financial entries and adjustment
+Gold Answer        : The pattern suggests frequent fluctuations in costs or budget allocations possibly related
+Matched Chunk IDs  : ['764.jpeg:child:1:2']
+Gold Chunk IDs     : ['764.jpeg:child:1:0', '764.jpeg:child:1:1', '764.jpeg:child:1:2']
+Retrieved Chunk IDs: ['764.jpeg:child:1:2', '764.jpeg:child:1:1', '2294.jpeg:child:1:0', '923.jpeg:child:1:1', '841.jpeg:child:1:0']
+Cited Chunk IDs    : ['s:child:0:0', 'ation:child:0:0', '764.jpeg:child:1:2', '1766.jpeg:child:0:0', '2127.jpeg:child:0:0']
+Scores & Flags     : Recall=0.67, MRR=1.0000, Faith=0.8127, AnsRel=0.9157, CtxPrec=0.9500, Flags=-, Lat(ms)=33845.6
+----------------------------------------------------------------------------------------------------
+
+[17] Q#176 (q6) | Doc_ID: 1064.jpeg
+Question           : What is the grand total of the gross change for Februar
+Gold Answer        : $15,706.00
+Matched Chunk IDs  : ['1064.jpeg:child:0:3']
+Gold Chunk IDs     : ['1064.jpeg:child:0:3']
+Retrieved Chunk IDs: ['1064.jpeg:child:0:3', '1064.jpeg:child:0:2', '1078.jpeg:child:0:2', '1078.jpeg:child:0:3', '1202.jpeg:child:0:3']
+Cited Chunk IDs    : ['1064.jpeg:child:0:3']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=0.8799, AnsRel=0.9917, CtxPrec=1.0000, Flags=-, Lat(ms)=27482.9
+----------------------------------------------------------------------------------------------------
+
+[18] Q#180 (q8) | Doc_ID: 3980.jpeg
+Question           : How can this document inform discussions on cigarette t
+Gold Answer        : This document can inform discussions on whether cigarette taxes are a regressive financial
+Matched Chunk IDs  : ['3980.jpeg:child:1:2']
+Gold Chunk IDs     : ['3980.jpeg:child:1:2', '3980.jpeg:child:0:0', '3980.jpeg:child:0:1']
+Retrieved Chunk IDs: ['3980.jpeg:child:1:2', '4050.jpeg:child:0:4', '4294.jpeg:child:1:3', '3980.jpeg:child:1:0', '3945.jpeg:child:1:3']
+Cited Chunk IDs    : ['s:child:0:0', '3980.jpeg:child:1:2', 'lists:child:0:0', 'can:child:0:0', '3945.jpeg:child:1:3', '417.jpeg:child:0:0', 'provides:child:0:0', '3947.jpeg:child:0:0', 'demonstrates:child:0:0']
+Scores & Flags     : Recall=0.33, MRR=1.0000, Faith=0.8174, AnsRel=0.9096, CtxPrec=0.8042, Flags=-, Lat(ms)=34020.1
+----------------------------------------------------------------------------------------------------
+
+[19] Q#186 (q1) | Doc_ID: 6983.jpeg
+Question           : What is the company name mentioned in the check remitta
+Gold Answer        : Philip Morris Incorporated
+Matched Chunk IDs  : ['6983.jpeg:child:0:0']
+Gold Chunk IDs     : ['6983.jpeg:child:0:0', '6983.jpeg:child:0:1']
+Retrieved Chunk IDs: ['6983.jpeg:child:0:0', '6983.jpeg:child:0:4', '6812.jpeg:child:0:0', '6812.jpeg:child:0:3', '9048.jpeg:child:1:1']
+Cited Chunk IDs    : ['6983.jpeg:child:0:0', 'which:child:0:0', '2098.jpeg:child:0:0', '7503.jpeg:child:0:0', 's:child:0:0']
+Scores & Flags     : Recall=0.50, MRR=1.0000, Faith=0.7699, AnsRel=1.0000, CtxPrec=1.0000, Flags=-, Lat(ms)=37142.6
+----------------------------------------------------------------------------------------------------
+
+[20] Q#188 (q8) | Doc_ID: 9565.jpeg
+Question           : What is the duration of the service period mentioned in
+Gold Answer        : The service period extends from March 23, 1974, to April 19, 1974.
+Matched Chunk IDs  : ['9565.jpeg:child:1:0']
+Gold Chunk IDs     : ['9565.jpeg:child:0:2', '9565.jpeg:child:1:0']
+Retrieved Chunk IDs: ['9565.jpeg:child:1:0', '7679.jpeg:child:1:0', '6099.jpeg:child:0:2', '6099.jpeg:child:1:0', '8997.jpeg:child:1:1']
+Cited Chunk IDs    : ['is:child:0:0', '9565.jpeg:child:1:0']
+Scores & Flags     : Recall=0.50, MRR=1.0000, Faith=0.8000, AnsRel=0.9773, CtxPrec=1.0000, Flags=-, Lat(ms)=15668.8
+----------------------------------------------------------------------------------------------------
+
+[21] Q#190 (q1) | Doc_ID: 3381.jpeg
+Question           : What is the total amount of pending charges for Contrac
+Gold Answer        : $12,238
+Matched Chunk IDs  : ['3381.jpeg:child:0:0']
+Gold Chunk IDs     : ['3381.jpeg:child:0:0']
+Retrieved Chunk IDs: ['3381.jpeg:child:0:0', '7894.jpeg:child:0:2', '6977.jpeg:child:0:3', '6829.jpeg:child:0:2', '8583.jpeg:child:0:3']
+Cited Chunk IDs    : ['3381.jpeg:child:0:0', 's:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=1.0000, Faith=0.8654, AnsRel=1.0000, CtxPrec=1.0000, Flags=-, Lat(ms)=30218.4
+----------------------------------------------------------------------------------------------------
+
+[22] Q#199 (q2) | Doc_ID: 4254.jpeg
+Question           : Who is the recipient of the $500 donation?
+Gold Answer        : Weddell Brown Campaign
+Matched Chunk IDs  : ['4254.jpeg:child:0:1']
+Gold Chunk IDs     : ['4254.jpeg:child:0:1']
+Retrieved Chunk IDs: ['3678.jpeg:child:0:2', '4254.jpeg:child:0:1', '4265.jpeg:child:1:0', '6658.jpeg:child:0:0', '4163.jpeg:child:0:2']
+Cited Chunk IDs    : ['4254.jpeg:child:0:1', 'specifies:child:0:0', 's:child:0:0']
+Scores & Flags     : Recall=1.00, MRR=0.5000, Faith=0.8889, AnsRel=0.8785, CtxPrec=0.7835, Flags=-, Lat(ms)=35856.4
+----------------------------------------------------------------------------------------------------
