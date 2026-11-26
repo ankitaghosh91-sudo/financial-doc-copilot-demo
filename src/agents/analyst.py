@@ -1,3 +1,4 @@
+import os
 import re
 from collections.abc import Callable
 from typing import Any
@@ -5,6 +6,9 @@ from typing import Any
 from src.agents.state import AgentRAGState
 
 RerankerFn = Callable[[str, list[dict[str, Any]], int], list[dict[str, Any]]]
+
+MIN_RERANK_SCORE = float(os.getenv("MIN_RERANK_SCORE", "-2.0"))
+MIN_TERM_OVERLAP = 0.22
 
 
 def _default_rerank_fn(
@@ -99,13 +103,32 @@ def _assess_coverage(
     top_doc = non_empty_docs[0]
     top_score = float(top_doc.get("rerank_score", top_doc.get("score", 0.0)))
 
-    if len(q_tokens) >= 3 and overlap_ratio < 0.12 and not missing_terms:
+    if top_score < MIN_RERANK_SCORE:
+        gaps.append(
+            f"Top reranker score ({top_score:.4f}) is below threshold ({MIN_RERANK_SCORE:.2f})."
+        )
+
+    if len(q_tokens) >= 3 and overlap_ratio < MIN_TERM_OVERLAP:
         gaps.append(
             f"Low term overlap ({overlap_ratio:.2f}) between question and top reranked chunks."
         )
 
-    if top_score < -3.5 or (top_score < -2.0 and overlap_ratio < 0.20):
-        gaps.append(f"Weak top reranker score ({top_score:.4f}) for query relevance.")
+    # Flag generic singular "the <doc_type>" questions with no specific ID/number/date across many docs
+    q_lower = (question or "").lower()
+    has_specific_id = bool(re.search(r"\b[a-z]*\d+[a-z0-9_-]*\b", q_lower)) or bool(required_terms)
+    top_doc_ids = {
+        str(d.get("doc_id") or "")
+        for d in non_empty_docs[:5]
+        if d.get("doc_id")
+    }
+    if (
+        not has_specific_id
+        and re.search(r"\bthe\s+(check|invoice|receipt|voucher|order|statement|bill|document)\b", q_lower)
+        and len(top_doc_ids) >= 3
+    ):
+        gaps.append(
+            "Ambiguous reference to a single document without a specific ID, date, amount, or entity."
+        )
 
     return len(gaps) == 0, gaps
 

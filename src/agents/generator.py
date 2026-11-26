@@ -35,6 +35,7 @@ def _docs_to_evidence(docs: list[dict[str, Any]], max_docs: int) -> list[Evidenc
         items.append(Evidence(**payload))
     return items
 
+
 def make_answer_strategy_generator(
     answer_strategy: AnswerStrategyBase,
     prompt_strategy: PromptStrategyBase,
@@ -75,8 +76,11 @@ def make_answer_strategy_generator(
         reason = str(result.get("reason") or "")
         answer_text = str(result.get("answer") or "").strip()
 
-        if should_refuse and not answer_text:
-            answer_text = f"Insufficient retrieved evidence: {reason}".strip()
+        if should_refuse:
+            if not answer_text:
+                answer_text = f"Insufficient retrieved evidence: {reason}".strip()
+            citation_pairs = []
+            chunk_ids = []
 
         return {
             "draft_answer": answer_text,
@@ -95,12 +99,26 @@ def _default_generate_fn(state: AgentRAGState) -> dict[str, Any]:
     ][:5]
     if not docs:
         return {
-            "draft_answer": "",
+            "draft_answer": "Insufficient retrieved evidence: No relevant document chunks were retrieved.",
             "should_refuse": True,
             "refusal_reason": "No relevant document chunks were retrieved.",
             "citations": [],
             "citation_pairs": [],
         }
+
+    attempt = int(state.get("attempt", 1) or 1)
+    max_attempts = int(state.get("max_attempts", 2) or 2)
+    if not state.get("evidence_sufficient", True) and attempt >= max_attempts:
+        gaps = state.get("evidence_gaps") or ["Insufficient supporting evidence in retrieved chunks."]
+        reason = "; ".join(str(g) for g in gaps)
+        return {
+            "draft_answer": f"Insufficient retrieved evidence: {reason}",
+            "should_refuse": True,
+            "refusal_reason": reason,
+            "citations": [],
+            "citation_pairs": [],
+        }
+
     pairs = [
         {
             "doc_id": str(d.get("doc_id") or ""),

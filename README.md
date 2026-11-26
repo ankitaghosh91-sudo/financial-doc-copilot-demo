@@ -1,11 +1,14 @@
-# Financial Document Copilot
+# Financial Document Agentic RAG Copilot
 
-A small college-project demo. It loads 10 documents from `sujet-ai/Sujet-Finance-QA-Vision-100k`, retrieves matching dataset QA pairs, and returns their answer with a document citation. This is a working no-LLM baseline; strategies can be replaced without changing the pipeline.
-Strategy extension uses simple class inheritance (`BaseClass -> CustomClass`) via Python `abc` base classes, not `Protocol`.
+A document question-answering and retrieval-evaluation system built on [`sujet-ai/Sujet-Finance-QA-Vision-100k`](https://huggingface.co/datasets/sujet-ai/Sujet-Finance-QA-Vision-100k). It loads sample financial records and document images, retrieves relevant evidence and dataset QA context, and returns grounded answers with source citations.
 
-Dataset source: [Sujet-Finance-QA-Vision-100k](https://huggingface.co/datasets/sujet-ai/Sujet-Finance-QA-Vision-100k).
+The project supports a deterministic no-LLM baseline alongside configurable retrieval, prompting, answering, memory, and evaluation strategies via Python `abc` base classes (`BaseClass -> CustomClass` inheritance rather than `Protocol`), allowing components to be swapped without rewriting the pipeline.
 
-## Setup and run
+> **Disclaimer:** This prototype is intended for document Q&A demonstrations and evaluation only. It does not provide financial advice or execute financial transactions.
+
+---
+
+## Quick Start
 
 ```bash
 uv sync
@@ -14,7 +17,22 @@ uv run python -m scripts.download_sample
 uv run uvicorn src.api.main:app --reload
 ```
 
-The 10-record sample and images are included in `data/sample/`; the command verifies they are present. To fetch a fresh bounded sample, use `TMPDIR=/tmp uv run python -m scripts.download_sample --refresh`. The refresh streams only 10 rows; it does not download the full dataset.
+The 10-record sample and images are included in `data/sample/` and The 500-record sample and images are included in `data/sample_500/`; the command verifies they are present. To fetch a fresh bounded sample, use `TMPDIR=/tmp uv run python -m scripts.download_sample --refresh`. The refresh streams only 10 rows; it does not download the full dataset.
+
+Web & Streamlit Interfaces
+Streamlit UI (app.py): Interactive interface calling the shared pipeline for live queries and inspection.
+
+FastAPI Web Views (http://127.0.0.1:8000):
+
+/ — Home navigator linking to all views
+
+/rag — RAG setup (chunking, embedding, vector-store configuration, and indexing)
+
+/query — Query workspace showing retrieved chunks, images, scores, and critiques
+
+/dashboard — Execution and trace dashboard with live query runs
+
+/evaluation — Evaluation metrics, per-datapoint observations, failure taxonomy, and document image links
 
 Open:
 
@@ -30,14 +48,14 @@ Run tests with `uv run python -m unittest discover -s tests -v`. Dense search us
 
 The app now builds strategies from config automatically. Set these keys in `.env`:
 
-- `SEARCH_STRATEGY`: `chroma` or `keyword`
-- `RAG_STRATEGY`: `auto`, `simple`, `multistep`, `agentic`, `combined`, `visual`
+- `SEARCH_STRATEGY`: `chroma` or `keyword` or `hybrid` or `hybrid_reranker`
+- `RAG_STRATEGY`: `auto`, `simple`, `agentic`
 - `PROMPT_STRATEGY`: `simple`, `zero_shot`, `few_shot`, `decomposition`
 - `ANSWER_STRATEGY`: `dataset`, `critic`, `voting`, `llm`
 - `MEMORY_STRATEGY`: `conversation`, `none`
 - `EVALUATOR_STRATEGY`: `simple`, `voting`
-- `CHUNKING_STRATEGY`: `whole`, `fixed`, `paragraph`
-- `EMBEDDER_STRATEGY`: `hashing`, `sentence_transformer`
+- `CHUNKING_STRATEGY`: `whole`, `fixed`, `paragraph`,`recursive`,`parent_child`
+- `EMBEDDER_STRATEGY`: `hashing`, `sentence_transformer`,`bge_api`
 - `METRICS_DB_PATH`: SQLite path for dashboard rows
 
 ## API endpoints
@@ -78,8 +96,8 @@ The main code is intentionally small and split by logical folders:
 
 - `src/pipeline/runner.py` — the single `run_pipeline()` function and the `PipelineStrategies` injection point.
 - `src/strategies/` — interchangeable retrieval, RAG, prompt, answer, memory, and evaluation classes.
-- `src/data/loader.py` — loads the first 10 dataset rows, parses QA JSON, and saves images plus a local manifest.
-- `src/models/records.py` — shared dataclasses (`Document`, `QAPair`, `Evidence`).
+- `src/data/loader.py` — loads the  no of dataset rows based on limit given while calling, parses QA JSON, and saves images plus a local manifest.
+- `src/models/records.py` — shared dataclasses (`Document`, `QAPair`, `Evidence`,`Chunk`).
 - `app.py` — small Streamlit interface calling the same pipeline.
 - `scripts/download_sample.py` — explicit, bounded dataset download.
 

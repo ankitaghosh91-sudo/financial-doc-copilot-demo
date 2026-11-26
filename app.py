@@ -58,6 +58,22 @@ SAMPLE_QUESTIONS: list[str] = [
 ]
 
 
+def _on_custom_question_change() -> None:
+    """Reset sample dropdown and stale result when user types a custom question."""
+    if (st.session_state.get("custom_question") or "").strip():
+        st.session_state.sample_question = ""
+        st.session_state.active_source = "custom"
+    st.session_state.last_result = None
+
+
+def _on_sample_question_change() -> None:
+    """Clear custom question box and stale result when picking a sample question."""
+    if (st.session_state.get("sample_question") or "").strip():
+        st.session_state.custom_question = ""
+        st.session_state.active_source = "sample"
+    st.session_state.last_result = None
+
+
 def _sanitize_chunk_id(value: Any) -> str | None:
     if value is None:
         return None
@@ -635,6 +651,12 @@ def main():
         st.session_state.session_id = uuid.uuid4().hex
     if "last_result" not in st.session_state:
         st.session_state.last_result = None
+    if "custom_question" not in st.session_state:
+        st.session_state.custom_question = ""
+    if "sample_question" not in st.session_state:
+        st.session_state.sample_question = ""
+    if "active_source" not in st.session_state:
+        st.session_state.active_source = "custom"
     if "eval_records" not in st.session_state:
         st.session_state.eval_records = []
     if "ragas_summary" not in st.session_state:
@@ -644,16 +666,37 @@ def main():
 
     langfuse_client, propagate_fn, langfuse_handler = _init_langfuse_runtime()
 
-    custom_question = st.text_input("Ask a question about the documents")
+    custom_question = st.text_input(
+        "Ask a question about the documents",
+        key="custom_question",
+        on_change=_on_custom_question_change,
+    )
     selected_sample = st.selectbox(
         "Or pick a sample question",
         options=[""] + SAMPLE_QUESTIONS,
+        key="sample_question",
+        on_change=_on_sample_question_change,
         format_func=lambda q: "-- Select a question --" if q == "" else q,
     )
-    question = (custom_question.strip() or selected_sample).strip()
+
+    custom_val = (custom_question or "").strip()
+    sample_val = (selected_sample or "").strip()
+    if st.session_state.active_source == "sample" and sample_val:
+        question = sample_val
+    elif custom_val:
+        question = custom_val
+    else:
+        question = sample_val
+
     uploaded_image = st.file_uploader("Optional image", type=["png", "jpg", "jpeg"])
 
+    result_container = st.container()
+
     if st.button("Ask"):
+        # Clear any previous result immediately when a new query is submitted
+        st.session_state.last_result = None
+        result_container.empty()
+
         if not question:
             st.warning("Enter or select a question before submitting.")
         elif len(question) > MAX_QUESTION_CHARS:
@@ -740,7 +783,7 @@ def main():
                             result, trace_lines = _invoke_pipeline_with_stages(
                                 question=question,
                                 documents=documents,
-                                session_id=st.session_state.session_state.session_id,
+                                session_id=st.session_state.session_id,
                                 image=image,
                                 strategies=strategies,
                                 active_banner=active_banner,
@@ -761,7 +804,6 @@ def main():
                     result["_agent_trace"] = trace_lines
                     active_banner.success("✨ **Pipeline finished** — answer ready below.")
                     trace_box.markdown("\n".join(f"- {line}" for line in trace_lines))
-
                     status_box.update(
                         label="Multi-agent pipeline completed",
                         state="complete",
@@ -772,8 +814,6 @@ def main():
             except Exception as exc:
                 _flush_langfuse(langfuse_client)
                 _render_query_failure(exc, st.session_state.session_id, len(question))
-                if _render_latest_result and st.session_state.last_result is not None:
-                    _render_latest_result(st.session_state.last_result)
                 _render_ragas_section()
                 return
 
@@ -791,8 +831,9 @@ def main():
                 }
             )
 
-    if st.session_state.last_result is not None:
-        _render_latest_result(st.session_state.last_result)
+    with result_container:
+        if st.session_state.last_result is not None:
+            _render_latest_result(st.session_state.last_result)
 
     _render_ragas_section()
 
